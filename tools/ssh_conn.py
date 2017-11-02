@@ -15,14 +15,13 @@ import pexpect
 # 配置服务器列表
 HOST_LIST = {
     "test" :
-        [
-            {
-                "ip"        : "192.168.1.100",
-                "user"      : "lixpam",
-                "password"  : "lixpam",
-                "port"      : 12345,
-            },
-        ],
+        {
+            "ip"   : "192.168.0.100",
+            "port" : 22,
+            "account" : [
+                ['lixpam', 'lixpam_passwd'],
+            ],
+        },
 }
 
 def _ssh(host):
@@ -34,22 +33,21 @@ def _ssh(host):
         raise SyntaxError("host '%s' not exist" % host)
 
     # 没提供user，使用列表中第一个
-    host_info = None
+    host_info = HOST_LIST[host]
+    user_info = None
     if _user is None:
-        host_info = HOST_LIST[host][0]
+        user_info = HOST_LIST[host]['account'][0]
     else:
-        for x in HOST_LIST[host]:
-            if x["user"] == _user:
-                host_info = x
+        for user_info in (x for x in HOST_LIST[host]['account'] if x[0] == _user): break
 
-    if host_info is None:
+    if user_info is None:
         raise SyntaxError("host config not exist")
 
     # 获取登录shell的窗口大小
     win_rows, win_cols = os.popen("stty size").read().split()
-    otp = pexpect.spawn('ssh %s@%s -p%s -o StrictHostKeyChecking=no' % (host_info['user'], host_info['ip'], host_info['port']))
+    otp = pexpect.spawn('ssh %s@%s -p%s -o StrictHostKeyChecking=no' % (user_info[0], host_info['ip'], host_info['port']))
     otp.expect('.*assword.*')
-    otp.sendline(host_info['password'])
+    otp.sendline(user_info[1])
     # 设置服务器窗口大小
     otp.setwinsize(int(win_rows), int(win_cols))
     # 进入可交互模式
